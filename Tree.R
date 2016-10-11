@@ -294,6 +294,116 @@ tree.simplify <- function(tree)
 }
 
 
+data.getSamples <- function(data, k, trainingsize = 200, seed = NaN) {
+  
+  # Set seed to add the possibility of getting the same data back between sessions
+  if(!is.nan(seed)) {
+    set.seed(seed)
+  }
+  
+  # Get x random unique rows from the dataset
+  training.indexes <- sample(nrow(data), trainingsize, replace = FALSE)
+  # Store rows corresponding to the random sample for us as training sample
+  training.sample <- data[training.indexes,]
+  # Store remaining rows for use as test sample
+  test.sample <- data[-training.indexes,]
+  
+  # Get a list of parts, containing the indexes of training.sample
+  parts.indexes <- indexes.equalparts(1:nrow(training.sample), k)
+  
+  # Store samples in named list
+  samples.list <- list(training = training.sample, test = test.sample, partindexes = parts.indexes)
+  # Return samples
+  samples.list
+}
+
+validate.kfold <- function(set, kindexes, nmin, minleaf, k = 10) {
+  
+  training.results <- NULL
+  
+  for(index in 1:k) {
+    
+    # Get the the current fold's indexes
+    k.indexes <- kindexes[[index]]
+    
+    # Get the rows corresponding to the current fold
+    classify.dat <- set[k.indexes,]
+    # Get the other values to use to grow the tree
+    tree.dat <- set[-k.indexes,]
+    
+    # Get splittable attributes from tree.dat -> all columns except the last one
+    tree.attributes <- tree.dat[, -ncol(set)]
+    # Get classes from tree.dat -> last column
+    tree.classes <- tree.dat[, ncol(set)]
+    
+    # Grow and simplify the tree using the given nmin and minleaf
+    tree <- tree.simplify(tree.grow(tree.attributes, tree.classes, nmin, minleaf))
+    
+    class <- tree.classify(classify.dat, tree)
+    rowname <- rownames(classify.dat)
+    
+    results <- data.frame(rowname, class)
+    
+    training.results <- rbind(training.results, results)
+  }
+  
+  error.rate <- tree.errorrate(training.results, set)
+  error.rate
+  
+}
+
+tree.errorrate <- function(predict, data) {
+  
+  error.count <- 0
+  
+  for(index in 1:nrow(predict)) {
+    
+    predict.entry <- predict[index,]
+    # Get true class based on rowname, as the results are randomized
+    true.class <- data[predict.entry$rowname, ncol(data)]
+    
+    if(predict.entry$class != true.class) {
+      error.count <- error.count + 1
+    }
+  }
+  
+  error.rate <- error.count / nrow(predict)
+  error.rate
+}
+
+indexes.equalparts <- function(rowids, parts) {
+  
+  # Create result variable
+  indexes.list <- NULL
+  
+  # If the (remaining) rowids need to be split in more than 1 part
+  if(parts > 1) {
+    
+    # Determine number of items to take from rowids and round to nearest integer
+    # so the parts are approximately equal size and remainders are spread out over parts
+    nitems <- round(length(rowids) / parts)
+    
+    # Get nitems randomly from the rowids & create a list from the result
+    indexes.random <- sample(rowids, nitems, replace = FALSE)
+    indexes.list <- list(indexes.random)
+    
+    # Remove indexes.random from the rowids, so no indexes will be used twice
+    rowids.remainder <- rowids[!rowids %in% indexes.random]
+    
+    # Recursively add the rest of the parts, subracting 1 from parts as the remaining rowids
+    # only need to be divided into one part less than this iteration.
+    indexes.list <- append(indexes.list, indexes.equalparts(rowids.remainder, parts - 1))
+    
+  } else {
+    # If last part (1), return remaining rowids
+    indexes.list <- list(rowids)
+  }
+  
+  # Return list of indexes
+  indexes.list
+}
+
+
 ###########################
 #                         #
 #         HELPERS         #
