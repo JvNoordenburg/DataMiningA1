@@ -339,15 +339,23 @@ validate.kfold <- function(set, kindexes, nmin, minleaf, k = 10) {
     # Grow and simplify the tree using the given nmin and minleaf
     tree <- tree.simplify(tree.grow(tree.attributes, tree.classes, nmin, minleaf))
     
+    # Classify the current fold's data
     class <- tree.classify(classify.dat, tree)
+    
+    # Get the rownames of the current fold's data for errorrate calculation, as the 
+    # data is randomized
     rowname <- rownames(classify.dat)
     
+    # Create dataframe with the results
     results <- data.frame(rowname, class)
     
+    # Append results to overall results to construct predicted values of all data in the set
     training.results <- rbind(training.results, results)
   }
   
+  # Calculate errorrate on all results
   error.rate <- tree.errorrate(training.results, set)
+  # Return errorrate
   error.rate
   
 }
@@ -362,10 +370,13 @@ tree.errorrate <- function(predict, data) {
     # Get true class based on rowname, as the results are randomized
     true.class <- data[predict.entry$rowname, ncol(data)]
     
+    # If predicted value doesn't match actual value, add 1 to error.count
     if(predict.entry$class != true.class) {
       error.count <- error.count + 1
     }
   }
+  
+  print(error.count)
   
   error.rate <- error.count / nrow(predict)
   error.rate
