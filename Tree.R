@@ -5,6 +5,29 @@ library(R6)
 makeActiveBinding("refresh", function() { shell("Rgui"); q("no") }, .GlobalEnv)
 makeActiveBinding("refresh", function() { system("R"); q("no") }, .GlobalEnv)
 
+data.generate <- function(set, partindexes, k, vnmin, vminleaf) {
+  
+  # Rows nmin values, Cols minleaf values!
+  error.matrix <- matrix(NA, nrow = length(vnmin), ncol = length(vminleaf))
+  
+  colnames(error.matrix) <- vminleaf
+  rownames(error.matrix) <- vnmin
+  
+  for(nmin in vnmin) {
+    
+    for(minleaf in vminleaf) {
+      
+      error.rate <- validate.kfold(set, partindexes, nmin, minleaf, 10)
+      
+      error.matrix[nmin, minleaf] <- error.rate
+      
+    }
+  }
+  
+  error.matrix
+  
+}
+
 
 ###########################
 #                         #
@@ -265,7 +288,6 @@ tree.visitNext <- function(tree, queue, x, y, nodelist, nmin, minleaf)
   {
     # Get the best possible split of the remaining attributes.
     best_split <- getBestPossibleSplit(x, y, rowNumbers, minleaf)
-    
     
     # Calculate the remaining data, which is only used in case of a branch node.
     splitvar <- best_split$mAttribute
