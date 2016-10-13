@@ -30,12 +30,36 @@ data.generate <- function(set, partindexes, k, vnmin, vminleaf) {
 }
 
 
+
+
+
+
+
+
 ###########################
 #                         #
 #          MAIN           #
 #                         #
 ###########################
 
+
+# Name:
+#     - tree.grow
+
+# Parameters:
+#     - x as a data.frame of all the data entries on which to grow the tree.
+#     - y as a vector of classification labels (1 or 0).
+#     - nmin as an integer restricting the amount of entries a node must have in order to be ligible to split.
+#     - minleaf as an integer restricting how big a resulting child node must be in order to be legal.
+
+# Returns:
+#     - A tree object represented by a data.frame.
+
+# Description:
+#     - This function grows a tree on the input x and the classification labels y.
+#     - The growing of the tree can be stopped prematurely by parsing nmin and minleaf paramters larger than 1.
+#     - This is to prevent overfitting. 
+#     - The parameter nmin should not be lower than minleaf as this would not make sense and would only lead to unnecessary calculations.
 tree.grow <- function(x, y, nmin, minleaf) 
 {
   # Create the empty tree.
@@ -56,6 +80,27 @@ tree.grow <- function(x, y, nmin, minleaf)
   return(tree)
 }
 
+
+
+
+
+
+
+
+
+
+# Name:
+#     - tree.classify
+
+# Parameters:
+#     - x as a data.frame of all the data entries and their classifications.
+#     - tr as a classified and posibly simplified table, represented by a data.frame.
+
+# Returns:
+#     - A vector containing the predicted classifications of the parsed data set, as predicted by the parsed tree.
+
+# Description:
+#     - This function classifies an input data set x according to the classification tree tr.
 tree.classify <- function(x, tr) 
 {
   # Create empty vector
@@ -91,6 +136,25 @@ tree.classify <- function(x, tr)
   class.results
 }
 
+
+
+
+
+
+
+
+# Name:
+#     - tree.simplify
+
+# Parameters:
+#     - tree as a data.frame representing the grown tree which we want to simplify.
+
+# Returns:
+#     - A pruned version of the parsed tree.
+
+# Description:
+#     - This function simplifies the parsed tree using cost-complexity pruning to prevent overfitting of the model.
+#     - The algorithm calculates T1 from Tmax by checking if the resubstitution error of a parent node is equal to that of its children.
 tree.simplify <- function(tree) 
 { 
   # Get all parent nodes
@@ -132,6 +196,12 @@ tree.simplify <- function(tree)
   # Return simplified tree
   tree
 }
+
+
+
+
+
+
 
 ###########################
 #                         #
@@ -186,6 +256,11 @@ Queue <- R6Class(
   )
 )
 
+
+
+
+
+
 ###########################
 #                         #
 #    NODE DATASTRUCTURE   #
@@ -210,6 +285,12 @@ Node <- R6Class(
     }
   )
 )
+
+
+
+
+
+
 
 
 ###########################
@@ -239,12 +320,34 @@ Split <- R6Class(
 )
 
 
+
+
+
+
+
 ###########################
 #                         #
 #          MAIN           #
 #                         #
 ###########################
 
+# Name:
+#     - tree.visitNext
+
+# Parameters:
+#     - tree as a data.frame representing the current recursion's state of the tree.
+#     - queue as a Queue R6Class object representing a Queue datastructure.
+#     - x as a data.frame of all the data entries on which to grow the tree.
+#     - y as a vector of classification labels (1 or 0).
+#     - nodelist as a vector of vectors.
+#     - nmin as an integer restricting the amount of entries a node must have in order to be ligible to split.
+#     - minleaf as an integer restricting how big a resulting child node must be in order to be legal.
+
+# Returns:
+#     - A fully grown, unsimplified tree, represented by a data.frame.
+
+# Description:
+#     - This function uses recursion and a Queue datstructure to grow a tree on input x and labels y in a breadth-first manner.
 tree.visitNext <- function(tree, queue, x, y, nodelist, nmin, minleaf)
 {
   # Get the next node from the queue.
@@ -315,12 +418,34 @@ tree.visitNext <- function(tree, queue, x, y, nodelist, nmin, minleaf)
 }
 
 
-data.getSamples <- function(data, k, trainingsize = 200, seed = NaN) {
-  
+
+
+
+
+
+
+
+
+
+# Name:
+#     - data.getSamples
+
+# Parameters:
+#     - data as a data.frame representing all the entries.
+#     - k as a numerical indicating how many folds we should perform in our k-fold algorithm.
+#     - trainingsize as a numerical representing the size of the training set.
+#     - seed as a numerical representing the seef by which we draw random rows from the training data.
+
+# Returns:
+#     - A list containing the training samples, the test samples and a list of which index belongs to which part.
+
+# Description:
+#     - This function splits the data set in to a training sample, test sample and splits the training sample in to k equal sized parts for the k-fold algorithm.
+data.getSamples <- function(data, k, trainingsize = 200, seed = NaN) 
+{
   # Set seed to add the possibility of getting the same data back between sessions
-  if(!is.nan(seed)) {
-    set.seed(seed)
-  }
+  if(!is.nan(seed)) 
+  {   set.seed(seed)}
   
   # Get x random unique rows from the dataset
   training.indexes <- sample(nrow(data), trainingsize, replace = FALSE)
@@ -334,10 +459,35 @@ data.getSamples <- function(data, k, trainingsize = 200, seed = NaN) {
   
   # Store samples in named list
   samples.list <- list(training = training.sample, test = test.sample, partindexes = parts.indexes)
+  
   # Return samples
   samples.list
 }
 
+
+
+
+
+
+
+
+
+
+# Name:
+#     - validate.kfold
+
+# Parameters:
+#     - set as a data.frame of the training sample we received from data.getSamples.
+#     - kindexes as a list of vectors that contain the rowindexes of all entries in that part.
+#     - nmin as an integer restricting the amount of entries a node must have in order to be ligible to split.
+#     - minleaf as an integer restricting how big a resulting child node must be in order to be legal.
+#     - k as a numerical indicating how many folds we should perform in our k-fold algorithm.
+
+# Returns:
+#     - The error rate of the classification of the test sample using the parsed nmin and minleaf as the tree growing parameters.
+
+# Description:
+#     - This function performs a kfold on the training set using the parsed parameters.
 validate.kfold <- function(set, kindexes, nmin, minleaf, k = 10) {
   
   training.results <- NULL
@@ -381,18 +531,37 @@ validate.kfold <- function(set, kindexes, nmin, minleaf, k = 10) {
   
 }
 
-tree.errorrate <- function(predict, data) {
-  
+
+
+
+
+
+
+# Name:
+#     - tree.errorrate
+
+# Parameters:
+#     - predict as a data.frame of rownames and classification labels (1 or 0) that were predicted by tree.classify.
+#     - data as a data.frame containing the original input data.
+
+# Returns:
+#     - The error rate of the classification as predicted by the tree.
+
+# Description:
+#     - This function calculates the errorrate, defined as the amount of errors devided by the total amount of predictions.
+tree.errorrate <- function(predict, data) 
+{
   error.count <- 0
   
-  for(index in 1:nrow(predict)) {
-    
+  for(index in 1:nrow(predict)) 
+  {
     predict.entry <- predict[index,]
     # Get true class based on rowname, as the results are randomized
     true.class <- data[predict.entry$rowname, ncol(data)]
     
     # If predicted value doesn't match actual value, add 1 to error.count
-    if(predict.entry$class != true.class) {
+    if(predict.entry$class != true.class) 
+    {
       error.count <- error.count + 1
     }
   }
@@ -403,14 +572,37 @@ tree.errorrate <- function(predict, data) {
   error.rate
 }
 
-indexes.equalparts <- function(rowids, parts) {
-  
+
+
+
+
+
+
+
+
+
+# Name:
+#     - indexes.equalparts
+
+# Parameters:
+#     - rowids as a vector of remaining row numbers that haven't been assigned a part yet.
+#     - parts as a numerical indicating how many parts there are left to assign rows to.
+
+# Returns:
+#     - A list of rowids that were randomly assigned to the current part.
+
+# Description:
+#     - This function takes x amount of randomly selected rows from rowids where x is the size of rowids / parts.
+#     - Every recursion the parts parameter hould be decreased by one so that every part is of equal size in the end.
+#     - If there are any leftover rows, these are returned in the last iteration.
+indexes.equalparts <- function(rowids, parts) 
+{
   # Create result variable
   indexes.list <- NULL
   
   # If the (remaining) rowids need to be split in more than 1 part
-  if(parts > 1) {
-    
+  if(parts > 1) 
+  {
     # Determine number of items to take from rowids and round to nearest integer
     # so the parts are approximately equal size and remainders are spread out over parts
     nitems <- round(length(rowids) / parts)
@@ -425,8 +617,9 @@ indexes.equalparts <- function(rowids, parts) {
     # Recursively add the rest of the parts, subracting 1 from parts as the remaining rowids
     # only need to be divided into one part less than this iteration.
     indexes.list <- append(indexes.list, indexes.equalparts(rowids.remainder, parts - 1))
-    
-  } else {
+  } 
+  else 
+  {
     # If last part (1), return remaining rowids
     indexes.list <- list(rowids)
   }
@@ -436,12 +629,32 @@ indexes.equalparts <- function(rowids, parts) {
 }
 
 
+
+
+
+
+
+
+
+
+
 ###########################
 #                         #
 #        HELPERS          #
 #                         #
 ###########################
 
+# Name:
+#     - tree.makeLeafNode
+
+# Parameters:
+#     - node as a data.frame.
+
+# Returns:
+#     - The parsed node converted to a leafnode.
+
+# Description:
+#     - This function takes a node (represented by a data.frame) and sets the necessary data members to -1 to turn it in to a leaf node.
 tree.makeLeafNode <- function(node) 
 {
   # Set all necessary values to -1 to make the node a leaf node
@@ -454,13 +667,50 @@ tree.makeLeafNode <- function(node)
   node
 }
 
+
+
+
+
+
+# Name:
+#     - tree.isLeafNode
+
+# Parameters:
+#     - node as a data.frame.
+
+# Returns:
+#     - A Logical indicating whether or not the parsed node is a leaf node.
+
+# Description:
+#     - This function checks if the parsed node is a leaf node.
 tree.isLeafNode <- function(node) 
 {   node$splitvar == -1}
 
 
+
+
+
+
+
+
+
+
+
+# Name:
+#     - node.classify
+
+# Parameters:
+#     - case as a data.frame row from the test data.
+#     - node as a data.frame row from the tree.
+
+# Returns:
+#     - The row index of the left or right child of the parsed node, to which the case should be assigned.
+
+# Description:
+#     - This function receives a data entry "case" and a tree node "node" and classifies it.
+#     - This classification tells the caller to which node the case should be assigned, the left or the right child node.
 node.classify <- function(case, node) 
 {
-  
   # Get respective value based on the splitvar of the node
   case.val <- case[, node$splitvar]
   
@@ -476,7 +726,33 @@ node.classify <- function(case, node)
   }
 }
 
-# Finds the best attribute to split on and returns a Split object containing the details of that split.
+
+
+
+
+
+
+
+
+
+
+
+# Name:
+#     - getBestPossibleSplit
+
+# Parameters:
+#     - x as a data.frame of all the data entries on which to grow the tree.
+#     - y as a vector of classification labels (1 or 0).
+#     - rowNumbers as a vector of row indexes that point to the nodes contained in the current node.
+#     - minleaf as an integer restricting how big a resulting child node must be in order to be legal.
+
+# Returns:
+#     - A Split object containing the details of the best possible split we can do in the current situation.
+
+# Description:
+#     - This function looks at all the attributes in order to deside what the best possible split is.
+#     - The details of the best possible split that are added in this method are the entries that go to the left, 
+#     - the entries that go to the right child and the column index of the attribute on which we have split.
 getBestPossibleSplit <- function(x, y, rowNumbers, minleaf)
 {
   
@@ -527,6 +803,29 @@ getBestPossibleSplit <- function(x, y, rowNumbers, minleaf)
 }
 
 
+
+
+
+
+
+
+
+
+# Name:
+#     - findBestSplitOnAttribute
+
+# Parameters:
+#     - x as a vector of all entries' values in a particular column.
+#     - y as a vector of classification labels (1 or 0).
+#     - minleaf as an integer restricting how big a resulting child node must be in order to be legal.
+#     - rowNumbers as a vector of row indexes that point to the nodes contained in the current node.
+
+# Returns:
+#     - A Split object containing the details of the best possible split we can do on the current attribute values.
+
+# Description:
+#     - This function looks at a single attribute (column) of the input and selects the rows from it that occur in the current node.
+#     - It then looks at every plausible splitvalue to decide which split causes the maximum reduction in impurity.
 findBestSplitOnAttribute <- function(x, y, minleaf, rowNumbers)
 {
   values <- c()
@@ -569,7 +868,28 @@ findBestSplitOnAttribute <- function(x, y, minleaf, rowNumbers)
   return(optimum_split)
 }
 
-# Split the node represented by the values and labels objects, according to the value of splitpoint.
+
+
+
+
+
+
+
+
+# Name:
+#     - split
+
+# Parameters:
+#     - values as a vector of numericals.
+#     - labels as a vector of classification labels (1 or 0) belonging to each of the values.
+#     - splitpoint as a numerical indicating on which to split the values.
+
+# Returns:
+#     - A Split object containing the details of this split.
+
+# Description:
+#     - This function splits the values and calculates the resulting reduction in impurity using the gini-index.
+#     - The Split object is then filled with preliminary details such as the impurity reduction, splitvalue, values in the left and right childs and labels in the left and right childs.
 split <- function(values, labels, splitpoint)
 {
   #print(cat("Values:  ", values, "     labels:  ", labels, "   splitpoint: ", splitpoint))
@@ -604,8 +924,25 @@ split <- function(values, labels, splitpoint)
 }
 
 
-# Calculates the resubstitution error of a node.
-# This is equal to the proportion of errors we make when we classify all entries in a node to its majority class.
+
+
+
+
+
+
+# Name:
+#     - resubstitutionError
+
+# Parameters:
+#     - y as a vector of classification labels (1 or 0).
+#     - majorityClass as a numerical indicating the prevalent classification label in y.
+
+# Returns:
+#     - The resubstitution error of the set of classification labels.
+
+# Description:
+#     - This function calculates the resubstitution error of the input vector y.
+#     - This is equal to the proportion of errors we make when we classify all entries in a node to its majority class.
 resubstitutionError <- function(y, majorityClass)
 {
   bad_classifications <- sum(y != majorityClass)
@@ -613,9 +950,25 @@ resubstitutionError <- function(y, majorityClass)
 }
 
 
-# Calculates the impurity of a node's labels y. 
-# This can be done using mean because the classification variable is binary 
-# and so the mean of the labels equals the probability of a 1.
+
+
+
+
+
+
+# Name:
+#     - impurity
+
+# Parameters:
+#     - y as a vector of classification labels (1 or 0).
+
+# Returns:
+#     - The impurity of the set of classification labels.
+
+# Description:
+#     - This function calculates the impurity of the input vector y.
+#     - This can be done using mean because the classification variable is binary 
+#     - and so the mean of the labels equals the probability of a 1.
 impurity <- function(y)
 {
   p1 <- mean(y)
