@@ -9,24 +9,33 @@ makeActiveBinding("refresh", function() { system("R"); q("no") }, .GlobalEnv)
 data.generate <- function(set, partindexes, k, vnmin, vminleaf) {
   
   # Rows nmin values, Cols minleaf values!
-  error.matrix <- matrix(NA, nrow = length(vnmin), ncol = length(vminleaf))
+  error.matrix <- matrix(NA, nrow = length(vnmin), ncol = length(vnmin))
   
-  colnames(error.matrix) <- vminleaf
-  rownames(error.matrix) <- vnmin
-  
-  for(nmin in vnmin) {
+  for(nminIndex in 1:length(vnmin)) {
     
-    for(minleaf in vminleaf) {
+    value.min <- vnmin[nminIndex]
+    
+    for(minleafIndex in 1:nminIndex) {
       
-      error.rate <- validate.kfold(set, partindexes, nmin, minleaf, 10)
+      value.leaf <- vminleaf[minleafIndex]
       
-      error.matrix[nmin, minleaf] <- error.rate
+      print(paste(value.min, value.leaf))
+      
+      error.rate <- validate.kfold(set, partindexes, value.min, value.leaf, 10)
+      
+      error.matrix[nminIndex, minleafIndex] <- error.rate
       
     }
   }
   
+  dimnames(error.matrix) <- list(paste(vnmin), paste(vminleaf))
+  
   error.matrix
   
+}
+
+dostuff <- function(x) {
+  return(paste(x))
 }
 
 
@@ -358,7 +367,8 @@ validate.kfold <- function(set, kindexes, nmin, minleaf, k = 10) {
     tree.classes <- tree.dat[, ncol(set)]
     
     # Grow and simplify the tree using the given nmin and minleaf
-    tree <- tree.simplify(tree.grow(tree.attributes, tree.classes, nmin, minleaf))
+     tree <- tree.simplify(tree.grow(tree.attributes, tree.classes, nmin, minleaf))
+    # tree <- tree.grow(tree.attributes, tree.classes, nmin, minleaf)
     
     # Classify the current fold's data
     class <- tree.classify(classify.dat, tree)
