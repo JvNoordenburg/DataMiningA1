@@ -1,13 +1,3 @@
-#data <- read.csv("F:/Workspaces/RStudio/Data Mining A1/DataMiningA1New/DataMiningA1/heart-decease-data.txt")
-
-
-test.assignment <- function(k, seed, nmin, minleaf)
-{
-     data <- read.csv("F:/Workspaces/RStudio/Data Mining A1/DataMiningA1New/DataMiningA1/heart-decease-data.txt")
-     samples <- data.getSamples(data, k, seed)
-     results <- validate.kfold(samples$training, samples$partindexes, nmin, minleaf, 10)
-     results
-}
 
 # Standard library that enables the creation of OOP objects that allow side effects. We use this to create a Queue data structure class to perform our BFS.
 library(R6)
