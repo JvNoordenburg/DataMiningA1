@@ -1,3 +1,14 @@
+#data <- read.csv("F:/Workspaces/RStudio/Data Mining A1/DataMiningA1New/DataMiningA1/heart-decease-data.txt")
+
+
+test.assignment <- function(k, seed, nmin, minleaf)
+{
+     data <- read.csv("F:/Workspaces/RStudio/Data Mining A1/DataMiningA1New/DataMiningA1/heart-decease-data.txt")
+     samples <- data.getSamples(data, k, seed)
+     results <- validate.kfold(samples$training, samples$partindexes, nmin, minleaf, 10)
+     results
+}
+
 # Standard library that enables the creation of OOP objects that allow side effects. We use this to create a Queue data structure class to perform our BFS.
 library(R6)
 
@@ -277,8 +288,11 @@ tree.visitNext <- function(tree, queue, x, y, nodelist, nmin, minleaf)
   # Add the rows of the node to the nodelist.
   nodelist[index] <- list(rowNumbers)
   
+  # Get the best possible split of the remaining attributes.
+  best_split <- getBestPossibleSplit(x, y, rowNumbers, minleaf)
+  
   # If the impurity is zero, or the size of the node does not match or exceed nmin, we register a leaf node in the data frame and enter recursion.
-  if(imp == 0 || length(rowNumbers) < nmin)
+  if(imp == 0 || length(rowNumbers) < nmin || is.null(best_split))
   {
     tree <- rbind(tree, c(parent, -1, -1, -1, -1.0, n, imp, gr, pnode, enode, rnode))
     return(tree.visitNext(tree, queue, x, y, nodelist, nmin, minleaf))
@@ -286,9 +300,6 @@ tree.visitNext <- function(tree, queue, x, y, nodelist, nmin, minleaf)
   # If there is still impurity and the size of the node does not match or exceed nmin, we should keep splitting.
   else
   {
-    # Get the best possible split of the remaining attributes.
-    best_split <- getBestPossibleSplit(x, y, rowNumbers, minleaf)
-    
     # Calculate the remaining data, which is only used in case of a branch node.
     splitvar <- best_split$mAttribute
     splitval <- best_split$mValue
@@ -503,6 +514,9 @@ getBestPossibleSplit <- function(x, y, rowNumbers, minleaf)
   leftRowNumbers <- NULL
   rightRowNumbers <- NULL
   
+  if(optimum_attribute_to_split == -1)
+  {   return(NULL)}
+  
   # Fill them according to whether they are above or below the optimum split value.
   for(i in 1:length(rowNumbers))
   {
@@ -560,6 +574,7 @@ findBestSplitOnAttribute <- function(x, y, minleaf, rowNumbers)
     {   optimum_split <- current_split}
   }
   
+  
   # Return the optimum split on this attribute as a Split object.
   return(optimum_split)
 }
@@ -567,6 +582,8 @@ findBestSplitOnAttribute <- function(x, y, minleaf, rowNumbers)
 # Split the node represented by the values and labels objects, according to the value of splitpoint.
 split <- function(values, labels, splitpoint)
 {
+  #print(cat("Values:  ", values, "     labels:  ", labels, "   splitpoint: ", splitpoint))
+  
   # Perform the split on the labels.
   left.labels <- labels [values <= splitpoint]
   right.labels <- labels [values > splitpoint]
@@ -581,6 +598,8 @@ split <- function(values, labels, splitpoint)
   left.impurity <- impurity(left.labels)
   right.proportion <- length(right.labels) / length(values)
   right.impurity <- impurity(right.labels)
+  
+  #print(cat(values.impurity, left.proportion, left.impurity, right.proportion, right.impurity))
   
   reduction <- values.impurity - ((left.proportion) * left.impurity) - (right.proportion * right.impurity)
   
